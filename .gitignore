@@ -1,5 +1,8 @@
 .env
-data/
+data/raw/*.json
+data/processed/*.parquet
+data/processed/*.csv
+data/**/*.txt
 __pycache__/
 *.pyc
 .venv/
