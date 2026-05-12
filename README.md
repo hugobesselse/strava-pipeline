@@ -36,4 +36,24 @@ This executes all functions defined in extract.py, transform.py and load.py. Eac
 
 Auth.py must be run manually once to retrieve STRAVA API tokens: store these tokens in .env file.
  
+## Project structure
+These are the folders: 
 
+strava-pipeline/
+├── data/
+│   ├── raw/          # .json data extracted from Strava
+│   └── processed/    # .parquet transformed data 
+├── src/
+│   ├── auth.py       # one-off authorisation
+│   ├── config.py     # sets configuration variables
+│   ├── explore.py    # supporting script to investigate the data
+│   ├── extract.py    # script to extract data from Strava
+│   ├── transform.py  # script to transfrom data
+│   └── load.py       # script to load raw and processed data into Azure bronze and silver layer. 
+├── sql/
+│   └── queries.sql   # folder for SQL queries, not used
+├── pipeline.py       # script to run complete pipeline
+├── .env              # environment variables
+├── .gitignore        # defines what should not be committed to GitHub
+├── requirements.txt  # Python dependencies 
+└── README.md         # project description
