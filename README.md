@@ -11,6 +11,7 @@ Explore.py is a supporting script to inspect the data types and column values.
 ## Installation
 Check and update Python version if necessary, create virtual environment in Visual Studio Code. 
 Install packages by executing requirements.txt: pip install -r requirements.txt
+
 Create Strava Developer App to retrieve STRAVA credentials. 
 Create .env file for variables not pulled from GitHub. These include:
 - STRAVA_CLIENT_ID=
@@ -20,6 +21,7 @@ Create .env file for variables not pulled from GitHub. These include:
 - STRAVA_REFRESH_TOKEN=
 - STRAVA_TOKEN_EXPIRES_AT=
 - AZURE_STORAGE_CONNECTION_STRING=
+
 Create Azure account, configure containers bronze and silver for data storage.
 
 ## Usage
@@ -63,7 +65,7 @@ strava-pipeline/
 
 ## Scope considerations
 The pipeline is limited to Azure's free tier. Several changes would be possible with a production environment: 
-- Using Azure Data Factory for orchestration
-- Using Azure Key Vault for credentials
-- Using Azure SQL for the gold layer
-- Using Azure Databricks for large-scale data transformations
+- Using Azure Data Factory for orchestration.
+- Using Azure Key Vault for credentials.
+- Using Azure SQL for the gold layer.
+- Using Azure Databricks for large-scale data transformations.
