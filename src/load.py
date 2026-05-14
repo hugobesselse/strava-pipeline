@@ -51,6 +51,8 @@ if __name__ == "__main__":
     print("Upload started...")
     upload_to_bronze()
     upload_to_silver()
+    upload_to_silver(filename="dim_date.parquet")
+
 
     
   

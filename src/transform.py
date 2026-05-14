@@ -59,7 +59,7 @@ def create_dim_date(df):
     
     return dim_date
 
-def save_processed_date(df,dim_date):
+def save_processed(df,dim_date):
     PROCESSED_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
     df.to_parquet(PROCESSED_DATA_PATH / "activities.parquet", index=False)
@@ -78,13 +78,6 @@ def deduplicate(df):
         print(f"Deduplicate: {before-after} duplicates removed")
     return df
 
-def save_processed(df):
-    # Save transformed data in Silver layer
-    PROCESSED_DATA_PATH.mkdir(parents=True, exist_ok=True)
-    output_file = PROCESSED_DATA_PATH / "activities.parquet"
-    df.to_parquet(output_file,index=False)
-    print(f"Saved: {len(df)} activities in {output_file}")
-
 def transform():
     print("Transformation started...")
 
@@ -95,9 +88,10 @@ def transform():
     df = deduplicate(df)
     df = transform_units(df)
     df = transform_dates(df)
+    dim_date = create_dim_date(df)
 
     print(f"Transformed: {len(df.columns)} columns")
-    save_processed(df)
+    save_processed(df,dim_date)
 
 if __name__ == "__main__":
     transform()
