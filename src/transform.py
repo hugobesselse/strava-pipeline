@@ -12,10 +12,10 @@ def load_raw_activities():
 def select_columns(df):
     # Select only columns of choice
     columns = [
-        "id","name","type","sport_type","start_date_local","timezone",
+        "id","name","sport_type","start_date_local","timezone",
         "distance","moving_time","elapsed_time","total_elevation_gain","average_speed",
-        "max_speed","elev_high","elev_low","has_heartrate","pr_count","achievement_count",
-        "kudos_count","commute","photo_count","visibility","total_photo_count","manual","athlete_count"
+        "max_speed","elev_high","elev_low","pr_count","achievement_count",
+        "kudos_count","visibility","total_photo_count","manual"
     ]
     return df[columns]
 
@@ -25,6 +25,8 @@ def transform_units(df):
     # Convert seconds to minutes
     df["moving_time_min"] = (df["moving_time"]/60).round(1)
     df["elapsed_time_min"] = (df["elapsed_time"]/60).round(1)
+    df["moving_time_hours"] = (df["moving_time_min"]/60).round(0)
+    df["elapsed_time_hours"] = (df["elapsed_time_min"]/60).round(0)
     # Convert speed from m/s to km/h
     df["average_speed_kmh"] = (df["average_speed"]*3.6).round(2)
     df["max_speed_kmh"] = (df["max_speed"]*3.6).round(2)
@@ -35,14 +37,36 @@ def transform_units(df):
 def transform_dates(df):
     # Convert date column to separate parts for PowerBI
     df["start_date_local"] = pd.to_datetime(df["start_date_local"])
-    df["year"] = df["start_date_local"].dt.year
-    df["month"] = df["start_date_local"].dt.month
-    df["month_name"] = df["start_date_local"].dt.strftime("%B")
-    df["day"] = df["start_date_local"].dt.day
-    df["day_of_week"] = df["start_date_local"].dt.strftime("%A")
     df["hour"] = df["start_date_local"].dt.hour
-
     return df
+
+def create_dim_date(df):
+    # Create date dimension table based on activities
+    dates=pd.date_range(
+        start=df["start_date_local"].min(),
+        end=df["start_date_local"].max(),
+        freq="D"
+    )
+
+    dim_date = pd.DataFrame({"date":dates})
+    dim_date["Year"] = dim_date["date"].dt.year
+    dim_date["Month"] = dim_date["date"].dt.month
+    dim_date["Day"] = dim_date["date"].dt.day
+    dim_date["Quarter"] = dim_date["date"].dt.quarter
+    dim_date["Month_name"] = dim_date["date"].dt.strftime("%B")
+    dim_date["Day_name"] = dim_date["date"].dt.strftime("%A")
+    dim_date["Day_number"] = dim_date["date"].dt.dayofweek
+    
+    return dim_date
+
+def save_processed_date(df,dim_date):
+    PROCESSED_DATA_PATH.mkdir(parents=True, exist_ok=True)
+
+    df.to_parquet(PROCESSED_DATA_PATH / "activities.parquet", index=False)
+    dim_date.to_parquet(PROCESSED_DATA_PATH / "dim_date.parquet", index=False)
+
+    print(f"Saved: {len(df)} activities")
+    print(f"Saved: {len(dim_date)} date rows in dim_date, ({len(dim_date)/365:.1f} years)")
 
 def deduplicate(df):
     # Remove duplicates based on unique Strava ID
