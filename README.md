@@ -1,5 +1,5 @@
 ## Project overview
-I created this pipeline to extract data from Strava via API and transform the data. The pipeline runs local but is build with Azure in mind; raw and processed data are stored in Azure Data Lake Storage. For visualisations I use PowerBI.   
+Welcome! I am Hugo and you are looking at my Strava project. This project extracts data from Strava via API and transforms the data. The pipeline runs local but is build with Azure in mind; raw and processed data are stored in Azure Data Lake Storage. For visualisations I use PowerBI.   
 
 ## Architecture
 - Extract.py retrieves data from Strava by looping a GET API call. The "last_extract" section updates to create an incremental data extraction. The result is stored without transformations as .json in Azure as the bronze layer.  
@@ -32,7 +32,7 @@ This executes all functions defined in extract.py, transform.py and load.py. Eac
 - python src/transform.py
 - python src/load.py
 
-Auth.py must be run manually once to retrieve STRAVA API tokens: store these tokens in .env file.
+Auth.py must be run manually once to retrieve STRAVA API tokens: store these tokens in .env file. 
  
 ## Project structure
 These are the folders: 
