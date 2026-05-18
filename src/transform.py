@@ -19,6 +19,13 @@ def select_columns(df):
     ]
     return df[columns]
 
+def merge_types(df):
+    # Merge Run and TrailRun activity types. 
+    df["sport_type"] = df["sport_type"].replace("TrailRun","Run")
+    # Merge Hike and Walk activity types. 
+    df["sport_type"] = df["sport_type"].replace("Hike","Walk")
+    return df
+
 def transform_units(df):
     # Convert meters to kilometers
     df["distance_km"] = (df["distance"]/1000).round(2)
@@ -34,11 +41,32 @@ def transform_units(df):
     df = df.drop(columns=["distance","moving_time","elapsed_time","average_speed","max_speed"])
     return df
 
+def filter_runs(df):
+    # Removing runs that have 0 moving time and 0 distance. 
+    before=len(df)
+    df = df[~(
+        (df["sport_type"] == "Run") 
+        & (df["moving_time_min"] == 0) 
+        & (df["distance_km"] == 0))]
+    after = len(df)
+    if before != after:
+        print(f"Filtered: {before-after} invalid run(s) removed")
+    return df
+
 def transform_dates(df):
     # Convert date column to separate parts for PowerBI
     df["start_date_local"] = pd.to_datetime(df["start_date_local"])
     df["hour"] = df["start_date_local"].dt.hour
     return df
+
+def filter_year(df):
+  # Remove activities before 2016
+    before = len(df)
+    df = df[df["start_date_local"].dt.year >= 2016]
+    after = len(df)
+    if before != after:
+      print(f"Filtered {before-after} activities before 2016 removed")
+    return df  
 
 def create_dim_date(df):
     # Create date dimension table based on activities
@@ -86,8 +114,11 @@ def transform():
 
     df = select_columns(df)
     df = deduplicate(df)
+    df = merge_types(df)
     df = transform_units(df)
+    df = filter_runs(df)
     df = transform_dates(df)
+    df = filter_year(df)
     dim_date = create_dim_date(df)
 
     print(f"Transformed: {len(df.columns)} columns")
