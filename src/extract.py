@@ -2,90 +2,87 @@ import os
 import json
 import time
 import requests
-from pathlib import Path
-from dotenv import load_dotenv
-from config import RAW_DATA_PATH, LAST_EXTRACT_FILE
+from config import RAW_DATA_PATH
 
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+def load_config():
+    return{
+        "access_token": os.getenv("STRAVA_ACCESS_TOKEN"),
+        "refresh_token": os.getenv("STRAVA_REFRESH_TOKEN"),
+        "client_id": os.getenv("STRAVA_CLIENT_ID"),
+        "client_secret": os.getenv("STRAVA_CLIENT_SECRET"),
+        "expires_at": int(os.getenv("STRAVA_TOKEN_EXPIRES_AT")),
+    }
 
-ACCESS_TOKEN = os.getenv("STRAVA_ACCESS_TOKEN")
-
-def refresh_token_if_needed():
+def refresh_token_if_needed(config,http_client=requests):
     "Retrieve new access token if prior one expired."
-    expires_at = int(os.getenv("STRAVA_TOKEN_EXPIRES_AT"))
 
-    if time.time() < expires_at:
-        return os.getenv("STRAVA_ACCESS_TOKEN")
+    if time.time() < config["expires_at"]:
+        return config["access_token"]
     
     # Token expired, request new token via refresh_token. 
-    response = requests.post(
+    response = http_client.post(
         "https://www.strava.com/oauth/token",
         data={
-            "client_id": os.getenv("STRAVA_CLIENT_ID"),
-            "client_secret": os.getenv("STRAVA_CLIENT_SECRET"),
+            "client_id": config["client_id"],
+            "client_secret": config["client_secret"],
             "grant_type": "refresh_token",
-            "refresh_token": os.getenv("STRAVA_REFRESH_TOKEN"),
+            "refresh_token": config["refresh_token"],
         },
     )
     tokens = response.json()
     print("Token renewed.")
     return tokens["access_token"]
 
-def get_activities(access_token, page=1, per_page=50, after=None):
-    "Retrieve a page of activities via Strava API."
-    params={"page":page,"per_page":per_page}
-    if after:
-        params["after"] = after
-    response = requests.get(
+def get_activities(access_token, page=1, per_page=50, http_client=requests):
+    # Retrieve a single page of activities. 
+    response = http_client.get(
         "https://www.strava.com/api/v3/athlete/activities",
         headers={"Authorization": f"Bearer {access_token}"},
-        params=params,
+        params={"page": page, "per_page": per_page},
     )
     return response.json()
 
-def extract_all_activities():
-    "Retrieve all activities and save them as JSON in data/raw/."
-    access_token = refresh_token_if_needed()
+def extract_all_activities(config, http_client=requests):
+    # Retrieve all activities as a list. 
+    access_token = refresh_token_if_needed(config,http_client=http_client)
     all_activities = []
     page = 1
 
-    if LAST_EXTRACT_FILE.exists():
-        with open(LAST_EXTRACT_FILE,"r") as f:
-            after = int(f.read().strip())
-        print(f"Incremental extract: activities after timestamp {after}")
-    else:
-        after = None
-        print("First extract: retrieve all activities")
+    print("Full extract: retrieving all activities.")
 
     while True:
-        activities = get_activities(access_token,page=page, after=after)
-        # Strava returns an empty list if there are no more activities. 
+        activities = get_activities(access_token, page=page, http_client=http_client)
         if not activities:
             break
-
         all_activities.extend(activities)
-        print(f"Page {page}: {len(activities)} activities extracted")
-
-        # Strava rate limit: 100 requests per 15 minutes. 
+        print(f"Page {page}: { len(activities)} activities extracted.")
         time.sleep(0.5)
-        page += 1
+        page +=1
+
+    print(f"Extraction complete: { len(all_activities)} activities retrieved")
+    return all_activities
+
+def save_activities(activities, output_path=None):
+    # Save activities as timestamped JSON. 
+    if output_path is None:
+        timestamp = int(time.time())
+        output_path = RAW_DATA_PATH / f"activities_{timestamp}.json"
     
-    RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
-    output_file = RAW_DATA_PATH / "activities.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if output_file.exists():
-        with open (output_file,"r") as f:
-            existing = json.load(f)
-        all_activities = existing + all_activities
-
-    with open(output_file, "w") as f:
-        json.dump(all_activities,f,indent=2)
-
-    with open (LAST_EXTRACT_FILE,"w") as f:
-        f.write(str(int(time.time())))
+    with open(output_path, "w") as f:
+        json.dump(activities, f , indent=2)
     
-    print(f"\nFinished! {len(all_activities)} activities saved in {output_file}")
+    print(f"Saved {len(activities)} activities to {output_path}.")
+    return output_path
 
 if __name__ == "__main__":
-    print("Script started")
-    extract_all_activities()
+    from pathlib import Path
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+    config = load_config()
+    activities = extract_all_activities(config)
+    save_activities(activities)
+
+
+
